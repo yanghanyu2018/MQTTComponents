@@ -247,6 +247,7 @@ const
     'RESERVED' //  3	Reserved
     );
 
+function util_mqtt_string(aMsg: string): AnsiString;    
 function CodeNames(aCode: byte): string;
 function ExtractFileNameOnly(FileName: string): string;
 function FailureNames(aCode: byte): string;
@@ -255,6 +256,15 @@ procedure DebugStr(aStr: string);
 implementation
 
 uses Windows, SysUtils;
+
+function util_mqtt_string(aMsg: string): AnsiString;
+var
+  x: integer;
+begin
+  Result := AnsiString(aMsg);
+  x := length(Result);
+  Result := AnsiChar(x div $100) + AnsiChar(x mod $100) + Result;
+end;
 
 function ExtractFileNameOnly(FileName: string): string;
 begin

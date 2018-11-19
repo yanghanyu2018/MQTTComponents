@@ -51,7 +51,9 @@ type
     Retries: integer;
     Publishing: Boolean;
     MsgStream: TMemoryStream;
+
     procedure Assign(From: TMQTTPacket);
+
     constructor Create;
     destructor Destroy; override;
   end;
@@ -67,7 +69,9 @@ type
     Retries: integer;
     Topic: UTF8String;
     Msg: AnsiString;
+
     procedure Assign(From: TMQTTMessage);
+
     constructor Create;
     destructor Destroy; override;
   end;
@@ -78,6 +82,7 @@ type
     Stamp: TDateTime;
     InFlight: TMQTTPacketStore;
     Releasables: TMQTTMessageStore;
+
     constructor Create;
     destructor Destroy; override;
   end;
@@ -86,6 +91,7 @@ type
   TMQTTSessionStore = class
     List: TList;
     Stamp: TDateTime;
+
     function GetItem(Index: Integer): TMQTTSession;
     procedure SetItem(Index: Integer; const Value: TMQTTSession);
     property Items[Index: Integer]: TMQTTSession read GetItem write SetItem; default;
@@ -97,6 +103,7 @@ type
     procedure DeleteSession(ClientID: UTF8String);
     procedure RestoreSession(ClientID: UTF8String; aClient: TClient); overload;
     procedure RestoreSession(ClientID: UTF8String; aClient: TMQTTClient); overload;
+
     constructor Create;
     destructor Destroy; override;
   end;
@@ -105,6 +112,7 @@ type
   TMQTTPacketStore = class
     List: TList;
     Stamp: TDateTime;
+
     function GetItem(Index: Integer): TMQTTPacket;
     procedure SetItem(Index: Integer; const Value: TMQTTPacket);
     property Items[Index: Integer]: TMQTTPacket read GetItem write SetItem; default;
@@ -115,6 +123,7 @@ type
     procedure DelPacket(anID: Word);
     function GetPacket(anID: Word): TMQTTPacket;
     procedure Remove(aPacket: TMQTTPacket);
+
     constructor Create;
     destructor Destroy; override;
   end;
@@ -133,6 +142,7 @@ type
     procedure DelMsg(anID: Word);
     function GetMsg(anID: Word): TMQTTMessage;
     procedure Remove(aMsg: TMQTTMessage);
+
     constructor Create;
     destructor Destroy; override;
   end;
@@ -144,6 +154,7 @@ type
     FBroker: Boolean; // non standard，判断是否是Broker
     FOnMon: TMQTTMonEvent;
     FOnSubscriptionChange: TNotifyEvent;
+
     procedure DoSend(Sender: TObject; anID: Word; aRetry: integer; aStream: TMemoryStream);
     procedure RxSubscribe(Sender: TObject; anID: Word; Topics: TStringList);
     procedure RxUnsubscribe(Sender: TObject; anID: Word; Topics: TStringList);
@@ -156,11 +167,13 @@ type
     Parser: TMQTTParser; // 报文解析器
     InFlight: TMQTTPacketStore; // MQTT包的存储控制
     Releasables: TMQTTMessageStore; // MQTT消息的存储控制
+
+    constructor Create(anOwner: TComponent); override;
+    destructor Destroy; override;
+
     procedure Mon(aStr: string);
     procedure DoData(Sender: TObject; ErrCode: Word);
     procedure DoSetWill(Sender: TObject; aTopic, aMessage: UTF8String; aQOS: TMQTTQOSType; aRetain: boolean);
-    constructor Create(anOwner: TComponent); override;
-    destructor Destroy; override;
     property OnSubscriptionChange: TNotifyEvent read FOnSubscriptionChange write FOnSubscriptionChange;
     property OnMon: TMQTTMonEvent read FOnMon write FOnMon;
   end;
@@ -184,6 +197,7 @@ type
     FOnMsg: TMQTTMsgEvent;
     FOnFailure: TMQTTFailureEvent;
     FOnClientID: TMQTTClientIDEvent;
+
     procedure DoSend(Sender: TObject; anID: Word; aRetry: integer; aStream: TMemoryStream);
     procedure RxConnAck(Sender: TObject; aCode: byte);
     procedure RxSubAck(Sender: TObject; anID: Word; Qoss: array of TMQTTQosType);
@@ -217,6 +231,7 @@ type
     InFlight: TMQTTPacketStore; // MQTT包的存储体
     Releasables: TMQTTMessageStore; // MQTT消息报的存储体
     Subscriptions: TStringList; // 订阅的主题信息
+
     function Enabled: boolean;
     function Online: boolean;
     function NextMessageID: Word;
@@ -229,6 +244,7 @@ type
     procedure SetWill(aTopic, aMessage: UTF8String; aQos: TMQTTQOSType; aRetain: Boolean = false);
     procedure Mon(aStr: string);
     procedure Activate(Enable: Boolean);
+
     constructor Create(anOwner: TComponent); override;
     destructor Destroy; override;
   published
@@ -277,6 +293,7 @@ type
     FOnDeleteSession: TMQTTSessionEvent;
     FOnRetain: TMQTTRetainEvent;
     FOnGetRetained: TMQTTRetainedEvent;
+
     procedure TimerProc(var aMsg: TMessage);
     procedure DoMon(Sender: TObject; aStr: string);
     // broker events
@@ -307,6 +324,7 @@ type
     Sessions: TMQTTSessionStore; // 会话的存储体
     Retained: TMQTTMessageStore; // 消息的存储体
     FOnMonHdr: TMQTTHeaderEvent;
+
     function NextMessageID: Word;
     procedure Mon(aStr: string);
     procedure Activate(Enable: boolean);
@@ -318,6 +336,7 @@ type
     function Enabled: boolean;
     function AddBroker(aHost: string; aPort: integer): TMQTTClient;
     procedure SyncBrokerSubscriptions(aBroker: TMQTTClient);
+
     constructor Create(anOwner: TComponent); override;
     destructor Destroy; override;
   published
@@ -343,6 +362,8 @@ type
   end;
 
 procedure Register;
+
+function ParseMultiTopics(aTopics: UTF8String): TStringList;
 function SubTopics(aTopic: UTF8String): TStringList;
 function IsSubscribed(aSubscription, aTopic: UTF8String): boolean;
 
@@ -404,6 +425,14 @@ begin
 end;
 
 (*
+  多个订阅主题的字符串，主题之间以';'作为分割
+*)
+function ParseMultiTopics(aTopics: UTF8String): TStringList;
+begin
+  result := __PartitionString(AnsiString(aTopics), ';', false, false);
+end;
+
+(*
   对订阅主题的处理，以'/'作为分割
 *)
 function SubTopics(aTopic: UTF8String): TStringList;
@@ -451,10 +480,12 @@ var
   x: byte;
 begin
   if aStream.Size = 0 then exit;
+
   aStream.Seek(0, soFromBeginning);
   aStream.Read(x, 1);
   x := (x and $F7) or (ord(aState) * $08);
   aStream.Seek(0, soFromBeginning);
+
   aStream.Write(x, 1);
 end;
 
@@ -463,8 +494,11 @@ end;
 constructor TClient.Create(anOwner: TComponent);
 begin
   inherited;
+
   FBroker := false; // non standard, 不作为Broker
+
   Parser := TMQTTParser.Create;
+
   Parser.OnSend := DoSend;
   Parser.OnSetWill := DoSetWill;
   Parser.OnSubscribe := RxSubscribe;
@@ -476,6 +510,7 @@ begin
   InFlight := TMQTTPacketStore.Create;
   Releasables := TMQTTMessageStore.Create;
   Subscriptions := TStringList.Create;
+
   OnDataAvailable := DoData;
 end;
 
@@ -483,11 +518,13 @@ destructor TClient.Destroy;
 begin
   InFlight.Clear;
   InFlight.Free;
+
   Releasables.Clear;
   Releasables.Free;
   Parser.Free;
   Subscriptions.Clear;
   Subscriptions.Free;
+
   inherited;
 end;
 
@@ -500,7 +537,7 @@ begin
 end;
 
 (*
-  如果连接正常，就向发送ID的信息
+  如果连接正常，就向ID发送信息
 *)
 procedure TClient.DoSend(Sender: TObject; anID: Word; aRetry: integer; aStream: TMemoryStream);
 var
@@ -510,6 +547,7 @@ begin
   begin
     aStream.Seek(0, soFromBeginning);
     aStream.Read(x, 1);
+
     if (TMQTTQOSType((x and $06) shr 1) in [qtAT_LEAST_ONCE, qtEXACTLY_ONCE])
       and (TMQTTMessageType((x and $F0) shr 4) in [{mtPUBREL,} mtPUBLISH, mtSUBSCRIBE, mtUNSUBSCRIBE])
       and (anID > 0) then
@@ -517,6 +555,7 @@ begin
       InFlight.AddPacket(anID, aStream, aRetry, Parser.RetryTime); // start disabled
       mon(string(Parser.ClientID) + ' Message ' + IntToStr(anID) + ' created.');
     end;
+
     Send(aStream.Memory, aStream.Size);
     Sleep(0);
   end;
@@ -566,6 +605,7 @@ var
   aPacket: TMQTTPacket;
 begin
   aPacket := InFlight.GetPacket(anID);
+
   if aPacket <> nil then
   begin
     aPacket.Counter := Parser.RetryTime;
@@ -579,6 +619,7 @@ begin
   end
   else
     Mon(string(Parser.ClientID) + ' REC Message ' + IntToStr(anID) + ' not found.');
+
   Parser.SendPubRel(anID);
 end;
 
@@ -590,6 +631,7 @@ var
   aMsg: TMQTTMessage;
 begin
   aMsg := Releasables.GetMsg(anID);
+
   if (aMsg <> nil) and (Owner.Owner is TMQTTServer) then
   begin
     Mon(string(Parser.ClientID) + ' REL Message ' + IntToStr(anID) + ' publishing @ ' + QOSNames[aMsg.Qos]);
@@ -600,6 +642,7 @@ begin
   end
   else
     Mon(string(Parser.ClientID) + ' REL Message ' + IntToStr(anID) + ' has been already removed from storage.');
+
   Parser.SendPubComp(anID);
 end;
 
@@ -619,15 +662,19 @@ var
 begin
   SetLength(Qoss, Topics.Count);
   aServer := nil;
+
   if Owner is TWSocketServer then
     if Owner.Owner is TMQTTServer then
       aServer := TMQTTServer(Owner.Owner);
+
   if aServer = nil then exit;
+
   for i := 0 to Topics.Count - 1 do
   begin
     found := false;
     x := cardinal(Topics.Objects[i]) and $03;
     q := TMQTTQOSType(x);
+
     if Assigned(aServer.FOnSubscription) then
       aServer.FOnSubscription(Self, UTF8String(Topics[i]), q);
     for j := 0 to Subscriptions.Count - 1 do
@@ -637,10 +684,12 @@ begin
         Subscriptions.Objects[j] := TObject(q);
         break;
       end;
+
     if not found then
     begin
       Subscriptions.AddObject(Topics[i], TObject(q));
     end;
+
     Qoss[i] := q;
     for j := 0 to aServer.Retained.Count - 1 do // set retained
     begin
@@ -654,6 +703,7 @@ begin
       end;
     end;
   end;
+
   if Parser.RxQos = qtAT_LEAST_ONCE then Parser.SendSubAck(anID, Qoss);
   if Assigned(FOnSubscriptionChange) then FOnSubscriptionChange(Self);
 end;
@@ -667,6 +717,7 @@ var
   changed: boolean;
 begin
   changed := false;
+
   for i := 0 to Topics.Count - 1 do
   begin
     for j := Subscriptions.Count - 1 downto 0 do
@@ -678,6 +729,7 @@ begin
       end;
     end;
   end;
+
   if changed and Assigned(FOnSubscriptionChange) then
     FOnSubscriptionChange(Self);
   if Parser.RxQos = qtAT_LEAST_ONCE then Parser.SendUnSubAck(anID);
@@ -692,6 +744,7 @@ var
   i: integer;
 begin
   if FEnable = Enable then exit;
+
   if (Enable) then
   begin
     // ICS服务器的设置
@@ -700,6 +753,7 @@ begin
     Server.Port := IntToStr(FPort);
     Server.Proto := 'tcp';
     Server.ClientClass := TClient;
+
     try
       Server.Listen; // 监听端口
       FEnable := true;
@@ -711,15 +765,18 @@ begin
   else
   begin
     FEnable := false;
+
     for i := 0 to Server.ClientCount - 1 do
     try
       TClient(Server.Client[i]).Close;
     except
     end;
+
     try
       Server.Close;
     except
     end;
+
     KillTimer(Timers, 1);
     KillTimer(Timers, 2);
     KillTimer(Timers, 3);
@@ -734,6 +791,7 @@ end;
 function TMQTTServer.AddBroker(aHost: string; aPort: integer): TMQTTClient;
 begin
   Result := TMQTTClient.Create(Self);
+
   Result.Host := aHost; // Host名称
   Result.Port := aPort; // Host端口
   Result.Broker := true; // 设置为Broker
@@ -742,6 +800,7 @@ begin
   Result.OnOffline := BkrOffline;
   Result.OnEnableChange := BkrEnableChanged;
   Result.OnMsg := BkrMsg;
+
   Brokers.Add(Result); // 增加到中介代理队列中去
 end;
 
@@ -754,6 +813,7 @@ end;
 procedure TMQTTServer.BkrOffline(Sender: TObject; Graceful: boolean);
 begin
   TMQTTClient(Sender).Subscriptions.Clear;
+
   if Assigned(FOnBrokerOffline) then
     FOnBrokerOffline(Sender, Graceful);
 end;
@@ -811,6 +871,7 @@ end;
 constructor TMQTTServer.Create(anOwner: TComponent);
 begin
   inherited;
+
   Timers := AllocateHWnd(TimerProc);
   FOnMonHdr := nil;
   MessageID := 1000;
@@ -833,11 +894,13 @@ begin
   DeallocateHWnd(Timers);
   for i := 0 to Brokers.Count - 1 do
     TMQTTClient(Brokers[i]).Free;
+
   Brokers.Free;
   Retained.Free;
   Sessions.Free;
   Activate(false);
   Server.Free;
+
   inherited;
 end;
 
@@ -1149,7 +1212,8 @@ begin
     KillTimer(Timers, aMsg.WParam);
     //    Mon ('Timer ' + IntToStr (aMsg.WParam) + ' triggered');
     case aMsg.WParam of
-      3: begin
+      3:
+        begin
           for i := Server.ClientCount - 1 downto 0 do
           begin
             aClient := TClient(Server.Client[i]);
@@ -1905,7 +1969,8 @@ begin
   begin
     KillTimer(Timers, aMsg.WParam);
     case aMsg.WParam of
-      1: begin
+      1:
+        begin
           Mon('Connecting to ' + Host + ' on Port ' + IntToStr(Port));
           Link.Addr := Host;
           Link.Port := IntToStr(Port);
@@ -1916,7 +1981,8 @@ begin
           end;
         end;
       2: Ping;
-      3: begin // send duplicates
+      3:
+        begin // send duplicates
           for i := InFlight.Count - 1 downto 0 do
           begin
             bPacket := InFlight.List[i];
