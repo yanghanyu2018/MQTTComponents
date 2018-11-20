@@ -247,7 +247,8 @@ const
     'RESERVED' //  3	Reserved
     );
 
-function util_mqtt_string(aMsg: string): AnsiString;    
+function util_mqtt_string(aMsg: string): AnsiString;
+function util_read_mqtt_string(aMQTMsg: AnsiString): AnsiString;
 function CodeNames(aCode: byte): string;
 function ExtractFileNameOnly(FileName: string): string;
 function FailureNames(aCode: byte): string;
@@ -264,6 +265,26 @@ begin
   Result := AnsiString(aMsg);
   x := length(Result);
   Result := AnsiChar(x div $100) + AnsiChar(x mod $100) + Result;
+end;
+
+function util_read_mqtt_string(aMQTMsg: AnsiString): AnsiString;
+var
+  i, x: Integer;
+begin
+  i := 1;
+  Result := '';
+  while (i + 1) <= length(aMQTMsg) do
+  begin
+    Result := '';
+
+    x := ord(aMQTMsg[i]) * $100 + ord(aMQTMsg[i + 1]);
+    i := i + 2;
+    if (x > 0) then
+    begin
+      Result := Copy(string(aMQTMsg), i, x);
+      i := i + x;
+    end;
+  end; // while
 end;
 
 function ExtractFileNameOnly(FileName: string): string;
