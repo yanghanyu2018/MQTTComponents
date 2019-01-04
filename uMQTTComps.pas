@@ -1,5 +1,5 @@
 unit uMQTTComps;
-
+
 interface
 
 uses
@@ -378,10 +378,10 @@ begin
 end;
 
 // 把字符串分割为TStrings。 原来的处理有问题，不能去除多余的空格
-function __PartitionString(aStr: string; aSeperator: string; bNoNeedFirst: boolean = false; bNeedEnd: boolean = true): TStringList;
+function __PartitionString(aStr: AnsiString; aSeperator: AnsiString; bNoNeedFirst: boolean = false; bNeedEnd: boolean = true): TStringList;
 var
   i, n: integer;
-  tmpStr: string;
+  tmpStr: AnsiString;
 begin
   Result := TStringList.Create;
   n := length(aSeperator);
@@ -409,7 +409,7 @@ end;
 (*
   状态对应的字符串
 *)
-function StateStr(aState: TSocketState): string;
+function StateStr(aState: TSocketState): AnsiString;
 begin
   case aState of
     wsInvalidState: result := 'Invalid State';
