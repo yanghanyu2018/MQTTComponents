@@ -378,26 +378,30 @@ begin
 end;
 
 // 把字符串分割为TStrings。 原来的处理有问题，不能去除多余的空格
-function __PartitionString(aStr: AnsiString; aSeperator: AnsiString; bNoNeedFirst: boolean = false; bNeedEnd: boolean = true): TStringList;
+function __PartitionString(aStr: AnsiString; aSeperator: AnsiString; bNeedFirst: boolean = false; bNeedEnd: boolean = true): TStringList;
 var
   i, n: integer;
-  tmpStr: AnsiString;
+  tmpStr, s: string;
 begin
   Result := TStringList.Create;
   n := length(aSeperator);
+
   tmpStr := Trim(aStr);
   i := Pos(aSeperator, tmpStr);
-  if (i > 0) and bNoNeedFirst then
+  if (i > 0) and bNeedFirst then
   begin
     tmpStr := Copy(tmpStr, i + n, Length(tmpStr) - n + i + 1);
     i := Pos(aSeperator, tmpStr);
   end;
+
   while i > 0 do
   begin
-    Result.Add(Trim(Copy(tmpStr, 1, i - 1))); // 去掉空格、回车等
+    s := Copy(tmpStr, 1, i - 1);
+    Result.Add(Trim(s)); // 去掉空格、回车等
     tmpStr := Copy(tmpStr, i + n, Length(tmpStr) - n + i + 1);
     i := Pos(aSeperator, tmpStr);
   end;
+
   if not bNeedEnd then
   begin
     tmpStr := Trim(tmpStr);
